@@ -100,254 +100,187 @@ export default function Dashboard() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.message || 'Export failed');
+      setError(err.message || 'Failed to export');
     } finally {
       setExporting(false);
     }
   }
 
-  const totalPages = Math.ceil(total / pageSize);
-  const allChecked = items.length > 0 && selected.size === items.length;
-  const someChecked = selected.size > 0 && selected.size < items.length;
+  const isAllSelected = selected.size === items.length && items.length > 0;
+  const pageStart = page * pageSize + 1;
+  const pageEnd = Math.min((page + 1) * pageSize, total);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">QR Codes</h1>
-          <p className="mt-1 text-sm text-slate-500">{stats.totalAll} total record{stats.totalAll !== 1 ? 's' : ''}</p>
+    <>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-slate-800">Dashboard</h1>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <StatCard title="Total QR Codes" value={stats.totalAll} />
+          <StatCard title="Total Used" value={stats.totalUsed} />
+          <StatCard title="Total Unused" value={stats.totalUnused} />
         </div>
 
-        <div className="flex gap-3">
-          {selected.size > 0 && (
-            <button
-              disabled={exporting}
-              onClick={handleExport}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {exporting ? 'Exporting…' : `Export PDF (${selected.size})`}
-            </button>
-          )}
-          <button
-            onClick={load}
-            disabled={loading}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+        {/* Filters and Actions */}
+        <div className="space-y-4 rounded-lg bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center border-b border-slate-200">
+              {FILTER_TABS.map((tab) => (
+                <button
+                  key={tab.label}
+                  onClick={() => setFilterAndReset(tab.value)}
+                  className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
+                    filter === tab.value
+                      ? 'border-emerald-500 text-emerald-600'
+                      : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleExport}
+                disabled={selected.size === 0 || exporting}
+                className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {exporting ? 'Exporting...' : `Export Selected (${selected.size})`}
+              </button>
+            </div>
+          </div>
 
-      {/* Stat cards — overall counts, not page-specific */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Total" value={stats.totalAll} color="slate" />
-        <StatCard label="Unused" value={stats.totalUnused} color="emerald" />
-        <StatCard label="Used" value={stats.totalUsed} color="red" />
-      </div>
+          {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-      {/* Filter tabs */}
-      <div className="flex w-fit gap-1 rounded-xl bg-slate-200 p-1">
-        {FILTER_TABS.map(({ label, value }) => (
-          <button
-            key={label}
-            onClick={() => setFilterAndReset(value)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-medium transition ${
-              filter === value
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Error banner */}
-      {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-      )}
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="w-10 px-4 py-3">
-                <input
-                  type="checkbox"
-                  checked={allChecked}
-                  ref={(el) => { if (el) el.indeterminate = someChecked; }}
-                  onChange={toggleSelectAll}
-                  className="cursor-pointer rounded"
-                />
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Code
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Product
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Created
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">
-                  Loading…
-                </td>
-              </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-400">
-                  No QR codes found.
-                </td>
-              </tr>
-            ) : (
-              items.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">
                     <input
                       type="checkbox"
-                      checked={selected.has(item.id)}
-                      onChange={() => toggleSelect(item.id)}
-                      className="cursor-pointer rounded"
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
                     />
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-700">{item.code}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        item.used
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-emerald-100 text-emerald-700'
-                      }`}
-                    >
-                      {item.used ? 'Used' : 'Unused'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{item.product?.name || '—'}</td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      disabled={detailLoading}
-                      onClick={() => handleViewDetails(item.id)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      View
-                    </button>
-                  </td>
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">ID</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Status</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Used At</th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="whitespace-nowrap px-3 py-4 text-center text-sm text-slate-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : items.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="whitespace-nowrap px-3 py-4 text-center text-sm text-slate-500">
+                      No QR codes found.
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item) => (
+                    <tr key={item.id}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          checked={selected.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500 font-mono">{item.id.slice(0, 8)}...</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        {item.used ? (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                            Used
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                            Unused
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        {item.usedAt ? new Date(item.usedAt).toLocaleString() : 'N/A'}
+                      </td>
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <button
+                          onClick={() => handleViewDetails(item.id)}
+                          className="text-emerald-600 hover:text-emerald-900"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Pagination + page size selector */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-600 shadow-sm">
-        {/* Rows per page */}
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-slate-500">Rows per page</span>
-          <div className="flex gap-1">
-            {PAGE_SIZE_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => { setPageSize(n); setPage(0); }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  pageSize === n
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+          {/* Pagination */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-3">
+            <div className="text-sm text-slate-700">
+              Showing <span className="font-medium">{pageStart}</span> to <span className="font-medium">{pageEnd}</span> of{' '}
+              <span className="font-medium">{total}</span> results
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="block w-full rounded-md border-slate-300 py-1.5 pl-3 pr-10 text-base focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
               >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Page navigation */}
-        <div className="flex items-center gap-3">
-          <span className="text-slate-500">
-            <span className="font-semibold text-slate-900">{page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)}</span>
-            {' '}of{' '}
-            <span className="font-semibold text-slate-900">{total}</span>
-          </span>
-          <div className="flex gap-1">
-            <button
-              disabled={page === 0}
-              onClick={() => setPage(0)}
-              title="First page"
-              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
-            >
-              «
-            </button>
-            <button
-              disabled={page === 0}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
-            >
-              ‹ Prev
-            </button>
-            <span className="flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-              {page + 1} / {totalPages || 1}
-            </span>
-            <button
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
-            >
-              Next ›
-            </button>
-            <button
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage(totalPages - 1)}
-              title="Last page"
-              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
-            >
-              »
-            </button>
+                {PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>Show {size}</option>)}
+              </select>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => p - 1)}
+                  disabled={page === 0}
+                  className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={pageEnd >= total}
+                  className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* QR Detail modal */}
       {detailQr && (
         <QrDetailModal
           qr={detailQr}
+          isOpen={!!detailQr}
           onClose={() => setDetailQr(null)}
           onUpdated={handleDetailUpdated}
+          loading={detailLoading}
         />
       )}
-    </div>
+    </>
   );
 }
 
-function StatCard({ label, value, color }) {
-  const colors = {
-    slate: 'bg-slate-50 text-slate-900',
-    emerald: 'bg-emerald-50 text-emerald-700',
-    red: 'bg-red-50 text-red-700'
-  };
-
+function StatCard({ title, value }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white p-4`}>
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${colors[color]?.split(' ')[1] || 'text-slate-900'}`}>
-        {value}
-      </div>
+    <div className="rounded-lg bg-white p-5 shadow-sm">
+      <dt className="truncate text-sm font-medium text-slate-500">{title}</dt>
+      <dd className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{value}</dd>
     </div>
   );
 }

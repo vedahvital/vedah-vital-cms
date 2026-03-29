@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const links = [
@@ -12,6 +13,7 @@ export default function Layout({ children }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   function confirmLogout() {
     logout();
@@ -21,7 +23,11 @@ export default function Layout({ children }) {
   return (
     <div className="flex min-h-screen bg-slate-100">
       {/* Sidebar */}
-      <aside className="flex w-60 flex-col bg-slate-900 text-slate-300">
+      <aside
+        className={`fixed inset-y-0 left-0 z-20 w-60 flex-col bg-slate-900 text-slate-300 transition-transform duration-300 ease-in-out lg:flex lg:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="border-b border-slate-700 px-5 py-5">
           <div className="flex items-center gap-3">
             {/* Logo with logout on hover */}
@@ -83,9 +89,21 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
-      </main>
+      <div className="flex flex-1 flex-col lg:pl-60">
+        <header className="sticky top-0 z-10 flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
+          <div className="text-lg font-semibold text-slate-800">Vedah Vital</div>
+          <button
+            onClick={() => setSidebarOpen(!isSidebarOpen)}
+            className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-600"
+          >
+            <Menu size={24} />
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
+        </main>
+      </div>
 
       {/* Logout confirmation modal */}
       {showConfirm && (
@@ -101,23 +119,21 @@ export default function Layout({ children }) {
                   <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
               </div>
-              <h2 className="text-base font-semibold text-slate-900">Sign out?</h2>
+              <h3 className="text-lg font-semibold text-slate-800">Confirm Logout</h3>
             </div>
-            <p className="mt-2 text-sm text-slate-500">
-              You will be returned to the login screen.
-            </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={confirmLogout}
-                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-              >
-                Yes, sign out
-              </button>
+            <p className="mb-6 text-sm text-slate-500">Are you sure you want to log out?</p>
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
               >
                 Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+              >
+                Logout
               </button>
             </div>
           </div>

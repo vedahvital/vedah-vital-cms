@@ -91,7 +91,7 @@ export default function Login() {
           {/* Email + Send OTP */}
           <div>
             <label className="block text-sm font-medium text-slate-700">Email address</label>
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
               <input
                 type="email"
                 required

@@ -48,7 +48,7 @@ export default function Generate() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Generate QR Codes</h1>
