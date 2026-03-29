@@ -1,5 +1,4 @@
 {
-  "nodejs": "20.x",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
