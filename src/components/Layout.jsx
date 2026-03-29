@@ -22,6 +22,14 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
+      {/* Backdrop overlay for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-10 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-20 w-60 flex-col bg-slate-900 text-slate-300 transition-transform duration-300 ease-in-out lg:flex lg:translate-x-0 ${
@@ -65,6 +73,7 @@ export default function Layout({ children }) {
               key={to}
               to={to}
               end={end}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                   isActive
