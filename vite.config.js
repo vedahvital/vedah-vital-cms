@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'https://vedah-vital-backend.vercel.app/',
+        target: 'https://vedah-vital-backend.vercel.app',
         changeOrigin: true
       }
     },
