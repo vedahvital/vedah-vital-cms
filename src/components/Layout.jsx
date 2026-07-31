@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 const links = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/generate', label: 'Generate QR', end: false },
+  { to: '/subscribers', label: 'Subscribers', end: false },
+  { to: '/contacts', label: 'Contact Messages', end: false },
   { to: '/admins', label: 'Admin Users', end: false }
 ];
 

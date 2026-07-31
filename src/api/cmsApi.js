@@ -99,3 +99,35 @@ export async function toggleAdminUser(id, isActive) {
     body: JSON.stringify({ isActive })
   });
 }
+
+// ── Subscribers ────────────────────────────────────────────────────────────
+
+export async function listSubscribers() {
+  return authFetch('/api/cms/subscribers');
+}
+
+export async function deleteSubscriber(id) {
+  return authFetch(`/api/cms/subscribers/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+// ── Contact Messages ───────────────────────────────────────────────────────
+
+export async function listContacts() {
+  return authFetch('/api/cms/contacts');
+}
+
+export async function updateContactStatus(id, status) {
+  return authFetch(`/api/cms/contacts/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
+  });
+}
+
+export async function deleteContact(id) {
+  return authFetch(`/api/cms/contacts/${id}`, {
+    method: 'DELETE'
+  });
+}
+
