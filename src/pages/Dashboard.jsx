@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { listQr, getQrDetails, exportPdf } from '../api/cmsApi';
 import QrDetailModal from '../components/QrDetailModal';
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 500];
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 500, 1000];
 
 const FILTER_TABS = [
   { label: 'All', value: undefined },

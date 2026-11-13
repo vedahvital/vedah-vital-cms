@@ -70,12 +70,12 @@ export default function Generate() {
             type="number"
             required
             min={1}
-            max={500}
+            max={1000}
             value={count}
             onChange={(e) => setCount(e.target.value)}
             className="mt-1 w-40 rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-emerald-400"
           />
-          <p className="mt-1 text-xs text-slate-400">Max 500 per batch.</p>
+          <p className="mt-1 text-xs text-slate-400">Max 1000 per batch.</p>
         </div>
 
         {/* Product info */}
