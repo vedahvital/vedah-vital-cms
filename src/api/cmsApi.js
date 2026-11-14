@@ -45,10 +45,10 @@ export async function listQr({ used, limit = 20, skip = 0 } = {}) {
   return authFetch(`/api/cms/qrcodes?${params}`);
 }
 
-export async function generateQr({ count = 1, product = {} } = {}) {
+export async function generateQr({ count = 1, product = {}, labReports = {} } = {}) {
   return authFetch('/api/cms/qrcodes/generate', {
     method: 'POST',
-    body: JSON.stringify({ count: Number(count), product })
+    body: JSON.stringify({ count: Number(count), product, labReports })
   });
 }
 

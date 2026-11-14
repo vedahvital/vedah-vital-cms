@@ -90,18 +90,75 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
         </div>
 
         {/* Product details */}
-        {(p.name || p.sku || p.batchNo || p.mfgDate || p.expDate || p.description) && (
+        {(p.name || p.brand || p.strength || p.blackPepperExtract || p.packSize || p.sku || p.batchNo || p.mfgDate || p.expDate || p.description) && (
           <div className="mt-5 rounded-xl bg-slate-50 p-4">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Product Info
             </div>
             <div className="grid grid-cols-2 gap-3">
               {p.name && <Field label="Name" value={p.name} />}
+              {p.brand && <Field label="Brand" value={p.brand} />}
+              {p.strength && <Field label="Strength" value={p.strength} />}
+              {p.blackPepperExtract && <Field label="Black Pepper Extract" value={p.blackPepperExtract} />}
+              {p.packSize && <Field label="Pack Size" value={p.packSize} />}
               {p.sku && <Field label="SKU" value={p.sku} mono />}
               {p.batchNo && <Field label="Batch No." value={p.batchNo} />}
               {p.mfgDate && <Field label="MFG Date" value={p.mfgDate} />}
               {p.expDate && <Field label="EXP Date" value={p.expDate} />}
               {p.description && <Field label="Description" value={p.description} full />}
+            </div>
+          </div>
+        )}
+
+        {/* Lab reports images preview */}
+        {current.labReports && (current.labReports.potency?.length > 0 || current.labReports.heavyMetals?.length > 0 || current.labReports.microbial?.length > 0) && (
+          <div className="mt-5 rounded-xl bg-slate-50 p-4">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Lab Analysis Certificates
+            </div>
+            <div className="space-y-4">
+              {current.labReports.potency?.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-slate-700 mb-1">
+                    1. Active Potency Assay ({current.labReports.potency.length} images)
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {current.labReports.potency.map((img, i) => (
+                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
+                        <img src={img} alt="Potency" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {current.labReports.heavyMetals?.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-slate-700 mb-1">
+                    2. Heavy Metals & Toxins ({current.labReports.heavyMetals.length} images)
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {current.labReports.heavyMetals.map((img, i) => (
+                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
+                        <img src={img} alt="Heavy metals" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {current.labReports.microbial?.length > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-slate-700 mb-1">
+                    3. Microbial Screening ({current.labReports.microbial.length} images)
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {current.labReports.microbial.map((img, i) => (
+                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
+                        <img src={img} alt="Microbial" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
