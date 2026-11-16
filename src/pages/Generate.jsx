@@ -32,7 +32,45 @@ export default function Generate() {
     setProduct((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleImageUpload(category, e) {
+  // Client-side image compressor (resizes and compresses to high-quality JPEG under ~150KB)
+  // Keeps full batch payload safely under Vercel's strict 4.5MB serverless limit
+  function compressImage(file, maxWidth = 1200, maxHeight = 1600, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return resolve(e.target?.result);
+          }
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG for high fidelity at very small size
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressedBase64);
+        };
+        img.src = e.target?.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageUpload(category, e) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -42,23 +80,21 @@ export default function Generate() {
       return;
     }
 
-    files.forEach((file) => {
+    for (const file of files) {
       if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
         alert('Only JPG, PNG and WebP images are supported.');
-        return;
+        continue;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result;
-        if (base64) {
-          setLabReports((prev) => ({
-            ...prev,
-            [category]: [...prev[category], base64].slice(0, 5)
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+      try {
+        const compressedBase64 = await compressImage(file);
+        setLabReports((prev) => ({
+          ...prev,
+          [category]: [...prev[category], compressedBase64].slice(0, 5)
+        }));
+      } catch (err) {
+        console.error('Failed to process image:', err);
+      }
+    }
     // Reset file input
     e.target.value = '';
   }
