@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE_URL || '';
+const BASE = import.meta.env.VITE_API_BASE_URL || 'https://vedah-vital-backend.vercel.app';
 const TOKEN_KEY = 'cms_token';
 
 export function getToken() {
