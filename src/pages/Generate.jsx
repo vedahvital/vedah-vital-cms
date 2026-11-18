@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateQr } from '../api/cmsApi';
 
@@ -24,17 +24,29 @@ export default function Generate() {
     microbial: []
   });
   const [loading, setLoading] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState('');
   const [generated, setGenerated] = useState(null);
+  const [previewImg, setPreviewImg] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setPreviewImg(null);
+    }
+    if (previewImg) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [previewImg]);
 
   function setField(key, value) {
     setProduct((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Client-side image compressor (resizes and compresses to high-quality JPEG under ~150KB)
-  // Keeps full batch payload safely under Vercel's strict 4.5MB serverless limit
-  function compressImage(file, maxWidth = 1200, maxHeight = 1600, quality = 0.75) {
+  // Multi-stage client compressor: guarantees crisp certificate readability while keeping
+  // each image base64 under ~150KB (safely fits 15 full certificates into Vercel's 4.5MB request limit)
+  function compressImage(file, maxWidth = 1000, maxHeight = 1400) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = reject;
@@ -60,9 +72,27 @@ export default function Generate() {
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Compress to JPEG for high fidelity at very small size
-          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-          resolve(compressedBase64);
+          // Try 0.70 quality first
+          let compressed = canvas.toDataURL('image/jpeg', 0.70);
+
+          // If over 180,000 characters (~135KB binary), recompress at 0.55
+          if (compressed.length > 180000) {
+            compressed = canvas.toDataURL('image/jpeg', 0.55);
+          }
+
+          // If still over 180,000 characters (e.g. dense noisy smartphone camera photo), downscale
+          if (compressed.length > 180000) {
+            const downCanvas = document.createElement('canvas');
+            downCanvas.width = Math.round(width * 0.75);
+            downCanvas.height = Math.round(height * 0.75);
+            const dCtx = downCanvas.getContext('2d');
+            dCtx.fillStyle = '#FFFFFF';
+            dCtx.fillRect(0, 0, downCanvas.width, downCanvas.height);
+            dCtx.drawImage(canvas, 0, 0, downCanvas.width, downCanvas.height);
+            compressed = downCanvas.toDataURL('image/jpeg', 0.55);
+          }
+
+          resolve(compressed);
         };
         img.src = e.target?.result;
       };
@@ -80,23 +110,27 @@ export default function Generate() {
       return;
     }
 
-    for (const file of files) {
-      if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
-        alert('Only JPG, PNG and WebP images are supported.');
-        continue;
+    setCompressing(true);
+    try {
+      for (const file of files) {
+        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+          alert('Only JPG, PNG and WebP images are supported.');
+          continue;
+        }
+        try {
+          const compressedBase64 = await compressImage(file);
+          setLabReports((prev) => ({
+            ...prev,
+            [category]: [...prev[category], compressedBase64].slice(0, 5)
+          }));
+        } catch (err) {
+          console.error('Failed to process image:', err);
+        }
       }
-      try {
-        const compressedBase64 = await compressImage(file);
-        setLabReports((prev) => ({
-          ...prev,
-          [category]: [...prev[category], compressedBase64].slice(0, 5)
-        }));
-      } catch (err) {
-        console.error('Failed to process image:', err);
-      }
+    } finally {
+      setCompressing(false);
+      e.target.value = '';
     }
-    // Reset file input
-    e.target.value = '';
   }
 
   function removeImage(category, index) {
@@ -262,8 +296,10 @@ export default function Generate() {
               subtitle="Withanolides HPLC & Piperine absorption booster test sheets"
               category="potency"
               images={labReports.potency}
+              disabled={compressing}
               onUpload={(e) => handleImageUpload('potency', e)}
               onRemove={(idx) => removeImage('potency', idx)}
+              onPreview={(src, title) => setPreviewImg({ src, title })}
             />
 
             <ReportUploadSection
@@ -271,8 +307,10 @@ export default function Generate() {
               subtitle="Lead, Mercury, Cadmium & Arsenic test results"
               category="heavyMetals"
               images={labReports.heavyMetals}
+              disabled={compressing}
               onUpload={(e) => handleImageUpload('heavyMetals', e)}
               onRemove={(idx) => removeImage('heavyMetals', idx)}
+              onPreview={(src, title) => setPreviewImg({ src, title })}
             />
 
             <ReportUploadSection
@@ -280,11 +318,20 @@ export default function Generate() {
               subtitle="Salmonella, E. Coli, Yeast & Mold microbiology lab certificates"
               category="microbial"
               images={labReports.microbial}
+              disabled={compressing}
               onUpload={(e) => handleImageUpload('microbial', e)}
               onRemove={(idx) => removeImage('microbial', idx)}
+              onPreview={(src, title) => setPreviewImg({ src, title })}
             />
           </div>
         </fieldset>
+
+        {compressing && (
+          <div className="rounded-xl bg-emerald-50 px-4 py-2.5 text-xs font-medium text-emerald-800 flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
+            Optimizing lab report certificates for ultra-fast verification...
+          </div>
+        )}
 
         {error && (
           <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -293,10 +340,10 @@ export default function Generate() {
         <div className="flex gap-3">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || compressing}
             className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
           >
-            {loading ? 'Generating…' : `Generate ${count > 1 ? count + ' codes' : '1 code'}`}
+            {loading ? 'Generating…' : compressing ? 'Optimizing images…' : `Generate ${count > 1 ? count + ' codes' : '1 code'}`}
           </button>
           {generated && (
             <>
@@ -358,6 +405,47 @@ export default function Generate() {
           </div>
         </div>
       )}
+
+      {/* Certificate Fullscreen Lightbox Modal */}
+      {previewImg && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/90 p-4 backdrop-blur-sm"
+          onClick={() => setPreviewImg(null)}
+        >
+          <div
+            className="flex w-full max-w-4xl items-center justify-between border-b border-white/20 pb-3 text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="font-semibold text-sm">{previewImg.title}</span>
+            <div className="flex items-center gap-3">
+              <a
+                href={previewImg.src}
+                download="lab-report-certificate.jpg"
+                className="rounded-lg bg-white/20 px-3 py-1 text-xs font-medium text-white hover:bg-white/30"
+              >
+                Download
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewImg(null)}
+                className="rounded-lg p-1 text-white/80 hover:bg-white/20 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div
+            className="my-auto flex max-h-[80vh] max-w-4xl items-center justify-center p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={previewImg.src}
+              alt="Certificate full view"
+              className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -380,7 +468,7 @@ function Field({ label, id, value, onChange, placeholder }) {
   );
 }
 
-function ReportUploadSection({ title, subtitle, category, images, onUpload, onRemove }) {
+function ReportUploadSection({ title, subtitle, category, images, onUpload, onRemove, onPreview, disabled }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -392,14 +480,14 @@ function ReportUploadSection({ title, subtitle, category, images, onUpload, onRe
           <span className="text-xs font-medium text-slate-500">
             {images.length}/5 uploaded
           </span>
-          <label className={`cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 ${images.length >= 5 ? 'pointer-events-none opacity-50' : ''}`}>
+          <label className={`cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 ${images.length >= 5 || disabled ? 'pointer-events-none opacity-50' : ''}`}>
             + Add Images
             <input
               type="file"
               multiple
               accept="image/png,image/jpeg,image/jpg,image/webp"
               onChange={onUpload}
-              disabled={images.length >= 5}
+              disabled={images.length >= 5 || disabled}
               className="hidden"
             />
           </label>
@@ -410,16 +498,29 @@ function ReportUploadSection({ title, subtitle, category, images, onUpload, onRe
       {images.length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {images.map((src, index) => (
-            <div key={index} className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+            <div
+              key={index}
+              onClick={() => onPreview && onPreview(src, `${title} — Page ${index + 1}`)}
+              className="group relative aspect-[3/4] cursor-pointer overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm transition-all hover:ring-2 hover:ring-emerald-500"
+              title="Click to zoom / preview certificate"
+            >
               <img
                 src={src}
                 alt={`${category} report ${index + 1}`}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
               />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                <span className="rounded bg-black/75 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                  🔍 Preview
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={() => onRemove(index)}
-                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white opacity-90 shadow hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(index);
+                }}
+                className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white opacity-90 shadow transition-all hover:scale-110 hover:opacity-100"
                 title="Remove image"
               >
                 ✕

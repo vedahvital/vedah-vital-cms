@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { updateQrUsed } from '../api/cmsApi';
 
 function Field({ label, value, mono, badge, full }) {
@@ -29,6 +29,17 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [current, setCurrent] = useState(qr);
+  const [previewImg, setPreviewImg] = useState(null);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setPreviewImg(null);
+    }
+    if (previewImg) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [previewImg]);
 
   async function handleToggle() {
     setLoading(true);
@@ -52,7 +63,7 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">QR Code Details</h2>
@@ -124,9 +135,15 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {current.labReports.potency.map((img, i) => (
-                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
-                        <img src={img} alt="Potency" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
-                      </a>
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewImg({ src: img, title: `Potency Assay Certificate #${i + 1}` })}
+                        className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
+                        title="Click to view full size"
+                      >
+                        <img src={img} alt="Potency" className="h-16 w-16 object-cover" />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -138,9 +155,15 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {current.labReports.heavyMetals.map((img, i) => (
-                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
-                        <img src={img} alt="Heavy metals" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
-                      </a>
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewImg({ src: img, title: `Heavy Metals & Toxins Certificate #${i + 1}` })}
+                        className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
+                        title="Click to view full size"
+                      >
+                        <img src={img} alt="Heavy metals" className="h-16 w-16 object-cover" />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -152,13 +175,60 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {current.labReports.microbial.map((img, i) => (
-                      <a key={i} href={img} target="_blank" rel="noreferrer" className="shrink-0">
-                        <img src={img} alt="Microbial" className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
-                      </a>
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewImg({ src: img, title: `Microbial Screening Certificate #${i + 1}` })}
+                        className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
+                        title="Click to view full size"
+                      >
+                        <img src={img} alt="Microbial" className="h-16 w-16 object-cover" />
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Certificate Fullscreen Lightbox Modal */}
+        {previewImg && (
+          <div
+            className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/90 p-4 backdrop-blur-sm"
+            onClick={() => setPreviewImg(null)}
+          >
+            <div
+              className="flex w-full max-w-4xl items-center justify-between border-b border-white/20 pb-3 text-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="font-semibold text-sm">{previewImg.title}</span>
+              <div className="flex items-center gap-3">
+                <a
+                  href={previewImg.src}
+                  download="lab-report-certificate.jpg"
+                  className="rounded-lg bg-white/20 px-3 py-1 text-xs font-medium text-white hover:bg-white/30"
+                >
+                  Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImg(null)}
+                  className="rounded-lg p-1 text-white/80 hover:bg-white/20 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div
+              className="my-auto flex max-h-[80vh] max-w-4xl items-center justify-center p-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={previewImg.src}
+                alt="Certificate full view"
+                className="max-h-[78vh] max-w-full rounded-lg object-contain shadow-2xl"
+              />
             </div>
           </div>
         )}
