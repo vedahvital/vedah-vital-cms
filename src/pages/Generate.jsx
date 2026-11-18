@@ -20,8 +20,8 @@ export default function Generate() {
   const [product, setProduct] = useState({ ...emptyProduct });
   const [labReports, setLabReports] = useState({
     potency: [],
-    heavyMetals: [],
-    microbial: []
+    heavyMetalsMicrobial: [],
+    allergens: []
   });
   const [loading, setLoading] = useState(false);
   const [compressing, setCompressing] = useState(false);
@@ -165,7 +165,7 @@ export default function Generate() {
   function handleReset() {
     setGenerated(null);
     setProduct({ ...emptyProduct });
-    setLabReports({ potency: [], heavyMetals: [], microbial: [] });
+    setLabReports({ potency: [], heavyMetalsMicrobial: [], allergens: [] });
     setCount(1);
   }
 
@@ -303,24 +303,24 @@ export default function Generate() {
             />
 
             <ReportUploadSection
-              title="2. Heavy Metals & Toxins Audit"
-              subtitle="Lead, Mercury, Cadmium & Arsenic test results"
-              category="heavyMetals"
-              images={labReports.heavyMetals}
+              title="2. Heavy Metals & Microbial Screening Report"
+              subtitle="Lead, Mercury, Cadmium, Arsenic & Microbiology (E. Coli, Salmonella, Yeast & Mold) test results"
+              category="heavyMetalsMicrobial"
+              images={labReports.heavyMetalsMicrobial}
               disabled={compressing}
-              onUpload={(e) => handleImageUpload('heavyMetals', e)}
-              onRemove={(idx) => removeImage('heavyMetals', idx)}
+              onUpload={(e) => handleImageUpload('heavyMetalsMicrobial', e)}
+              onRemove={(idx) => removeImage('heavyMetalsMicrobial', idx)}
               onPreview={(src, title) => setPreviewImg({ src, title })}
             />
 
             <ReportUploadSection
-              title="3. Microbial Screening Report"
-              subtitle="Salmonella, E. Coli, Yeast & Mold microbiology lab certificates"
-              category="microbial"
-              images={labReports.microbial}
+              title="3. Allergens Screening Report"
+              subtitle="Gluten, Soy, Dairy, Solvents, Pesticides & Mycotoxins safety audit certificates"
+              category="allergens"
+              images={labReports.allergens}
               disabled={compressing}
-              onUpload={(e) => handleImageUpload('microbial', e)}
-              onRemove={(idx) => removeImage('microbial', idx)}
+              onUpload={(e) => handleImageUpload('allergens', e)}
+              onRemove={(idx) => removeImage('allergens', idx)}
               onPreview={(src, title) => setPreviewImg({ src, title })}
             />
           </div>

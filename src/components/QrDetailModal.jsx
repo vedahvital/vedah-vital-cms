@@ -122,7 +122,13 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
         )}
 
         {/* Lab reports images preview */}
-        {current.labReports && (current.labReports.potency?.length > 0 || current.labReports.heavyMetals?.length > 0 || current.labReports.microbial?.length > 0) && (
+        {current.labReports && (
+          (current.labReports.potency?.length > 0) ||
+          (current.labReports.heavyMetalsMicrobial?.length > 0) ||
+          (current.labReports.allergens?.length > 0) ||
+          (current.labReports.heavyMetals?.length > 0) ||
+          (current.labReports.microbial?.length > 0)
+        ) && (
           <div className="mt-5 rounded-xl bg-slate-50 p-4">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Lab Analysis Certificates
@@ -148,41 +154,56 @@ export default function QrDetailModal({ qr, onClose, onUpdated }) {
                   </div>
                 </div>
               )}
-              {current.labReports.heavyMetals?.length > 0 && (
+
+              {/* 2. Heavy Metals & Microbial Screening (Combined) */}
+              {((current.labReports.heavyMetalsMicrobial?.length > 0) || (current.labReports.heavyMetals?.length > 0) || (current.labReports.microbial?.length > 0)) && (
                 <div>
-                  <div className="text-xs font-medium text-slate-700 mb-1">
-                    2. Heavy Metals & Toxins ({current.labReports.heavyMetals.length} images)
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {current.labReports.heavyMetals.map((img, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setPreviewImg({ src: img, title: `Heavy Metals & Toxins Certificate #${i + 1}` })}
-                        className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
-                        title="Click to view full size"
-                      >
-                        <img src={img} alt="Heavy metals" className="h-16 w-16 object-cover" />
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const combined = [
+                      ...(current.labReports.heavyMetalsMicrobial || []),
+                      ...(current.labReports.heavyMetals || []),
+                      ...(current.labReports.microbial || [])
+                    ];
+                    return (
+                      <>
+                        <div className="text-xs font-medium text-slate-700 mb-1">
+                          2. Heavy Metals & Microbial Screening ({combined.length} images)
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {combined.map((img, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setPreviewImg({ src: img, title: `Heavy Metals & Microbial Certificate #${i + 1}` })}
+                              className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
+                              title="Click to view full size"
+                            >
+                              <img src={img} alt="Heavy Metals & Microbial" className="h-16 w-16 object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
-              {current.labReports.microbial?.length > 0 && (
+
+              {/* 3. Allergens Screening */}
+              {current.labReports.allergens?.length > 0 && (
                 <div>
                   <div className="text-xs font-medium text-slate-700 mb-1">
-                    3. Microbial Screening ({current.labReports.microbial.length} images)
+                    3. Allergens Screening ({current.labReports.allergens.length} images)
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {current.labReports.microbial.map((img, i) => (
+                    {current.labReports.allergens.map((img, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => setPreviewImg({ src: img, title: `Microbial Screening Certificate #${i + 1}` })}
+                        onClick={() => setPreviewImg({ src: img, title: `Allergens Screening Certificate #${i + 1}` })}
                         className="shrink-0 cursor-pointer rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-emerald-500 transition-all text-left"
                         title="Click to view full size"
                       >
-                        <img src={img} alt="Microbial" className="h-16 w-16 object-cover" />
+                        <img src={img} alt="Allergens" className="h-16 w-16 object-cover" />
                       </button>
                     ))}
                   </div>
